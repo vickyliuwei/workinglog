@@ -27,4 +27,4 @@ Sample1:NewSample1
 Sample2:NewSample2
 bcftools reheader -s sample_mapping.txt input.vcf.gz > output.vcf.gz
 #merge vcf 
-bcftools merge --merge both vcf1 vcf2 -o vcfmerge
+bcftools merge --merge none vcf1 vcf2 -o vcfmerge
