@@ -1,0 +1,20 @@
+#calculate IBS to identifiy ecotype of ara
+# Step 1: 仅保留双等位 SNP
+bcftools view -m2 -M2 input.vcf -o biallelic.vcf
+
+# Step 2: 过滤缺失率（SNP缺失率 <10%）
+bcftools view -i 'F_MISSING < 0.1' biallelic.vcf -o filtered_missing.vcf
+
+# Step 3: 过滤 MAF（次等位频率 ≥1%）
+bcftools +fill-tags filtered_missing.vcf -- -t MAF | bcftools view -i 'MAF >= 0.01' -o filtered_maf.vcf
+
+# Step 4: 可选 - 过滤样本缺失率（如某些个体缺失率太高）
+bcftools stats filtered_maf.vcf | grep "PSC" | awk '$12 > 0.1 {print $1}' > high_missing_samples.txt
+bcftools view -S ^high_missing_samples.txt filtered_maf.vcf -o final_filtered.vcf
+#计算IBS
+plink --vcf final_filtered.vcf --genome --out ibs_results
+## correct Pinus gff
+##拿掉每个分割位置附近的某个基因中跨区段的转录本
+python transgff_new.py input.gff output.gff
+#使用agat检查修正
+agat_sp_fix_cds_phases.pl --gff genes.gff -o fixed.gff -f /mnt/ext35/ws/vcfsh/snpeff/snpEff/data/genomes/pt.fa
