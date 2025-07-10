@@ -1,0 +1,116 @@
+## calculate diff genotype counts for related individuals to identify id's ecotype in 1001g ara 多线程python脚本计算
+#!/usr/bin/env python3
+import gzip
+import sys
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
+
+def load_relationships(relationship_file):
+    """加载亲缘关系表，返回{id: [related_ids]}字典"""
+    relationships = defaultdict(list)
+    with open(relationship_file, 'r') as f:
+        for line in f:
+            id1, id2 = line.strip().split()
+            relationships[id1].append(id2)
+            relationships[id2].append(id1)
+    return relationships
+
+def compute_differences(vcf_file, target_ids, relationships):
+    """多线程计算差异"""
+    # 收集所有需要分析的ID
+    all_ids = set(target_ids)
+    for id in target_ids:
+        all_ids.update(relationships.get(id, []))
+    
+    # 读取VCF数据
+    samples = []
+    id_indices = {}
+    genotype_data = []
+    
+    with gzip.open(vcf_file, 'rt') as f:
+        for line in f:
+            if line.startswith('#CHROM'):
+                samples = line.strip().split('\t')[9:]
+                id_indices = {id: i for i, id in enumerate(samples) if id in all_ids}
+                continue
+            
+            if not line.startswith('#'):
+                fields = line.strip().split('\t')
+                gts = [fields[i+9].split(':')[0].replace('|', '/') 
+                      for i in range(len(samples)) if samples[i] in all_ids]
+                genotype_data.append(gts)
+    
+    # 准备多线程任务
+    def calculate_pair_diff(args):
+        """计算单个ID对的差异"""
+        target_id, related_id, target_idx, related_idx = args
+        diff_count = 0
+        for gts in genotype_data:
+            gt1 = gts[target_idx]
+            gt2 = gts[related_idx]
+            if gt1 in ('./.', '.') or gt2 in ('./.', '.'):
+                continue
+            if gt1 != gt2:
+                diff_count += 1
+        return (target_id, related_id, diff_count)
+    
+    # 创建任务列表
+    tasks = []
+    for target_id in target_ids:
+        if target_id not in id_indices:
+            print(f"Warning: Target ID {target_id} not found in VCF", file=sys.stderr)
+            continue
+            
+        related_ids = relationships.get(target_id, [])
+        for related_id in related_ids:
+            if related_id in id_indices:
+                tasks.append((
+                    target_id, 
+                    related_id,
+                    id_indices[target_id],
+                    id_indices[related_id]
+                ))
+    
+    # 多线程执行
+    results = []
+    with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+        futures = [executor.submit(calculate_pair_diff, task) for task in tasks]
+        for future in futures:
+            try:
+                results.append(future.result())
+            except Exception as e:
+                print(f"Error processing: {e}", file=sys.stderr)
+    
+    return results
+
+def main():
+    if len(sys.argv) != 4:
+        print("Usage: python script.py <target_ids.list> <relationships.txt> <input.vcf.gz>")
+        sys.exit(1)
+    
+    target_file = sys.argv[1]
+    relationship_file = sys.argv[2]
+    vcf_file = sys.argv[3]
+    
+    # 加载数据
+    with open(target_file, 'r') as f:
+        target_ids = [line.strip() for line in f]
+    
+    relationships = load_relationships(relationship_file)
+    
+    # 计算差异
+    results = compute_differences(vcf_file, target_ids, relationships)
+    
+    # 输出结果
+    print("Target_ID\tRelated_ID\tDiff_Count")
+    for target_id, related_id, diff_count in sorted(results, key=lambda x: (x[0], x[2])):
+        print(f"{target_id}\t{related_id}\t{diff_count}")
+
+if __name__ == '__main__':
+    main()
+  # 运行命令（建议使用Python 3.7+）
+python script.py target_ids.list relationships.txt input.vcf.gz > results.tsv
+
+# 查看前10个结果
+head results.tsv
