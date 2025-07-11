@@ -12,3 +12,6 @@
   #calculate diff genotype counts for related individuals to identify id's ecotype in 1001g ara 多线程python脚本计算 检验亲缘关系最近的个体之间有多少差异位点  
   #统计vcf中不同物种共享或者独有的位点，松树项目统计验证VCF中不同物种位点的特异性  
   #手动注释SNP位点所在的基因区域 手动注释芯片位点  
+  ## 20250711
+  高洁老师松树项目GEA loci 缺失率，pca,系统发育树，杂合度分析
+  
