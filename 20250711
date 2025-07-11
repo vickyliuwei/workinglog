@@ -1,0 +1,45 @@
+#get_109sample_vcf for gea loci
+VCFtools - 0.1.16
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+	--vcf /mnt/ext35/ws/vcfsh/test.recode.vcf
+	--out gea_109
+	--positions pos.txt
+	--recode
+#calculate pca and construct trees
+#qc firstly
+VCFtools - 0.1.16
+(C) Adam Auton and Anthony Marcketta 2009
+
+Parameters as interpreted:
+	--vcf gea_109.recode.vcf
+	--maf 0.05
+	--max-missing 0.8
+	--out gea_109_qc
+	--recode
+	--remove-indels
+ #pca
+ PLINK v1.90b6.20 64-bit (21 Sep 2020)
+Options in effect:
+  --allow-extra-chr
+  --out pca_gea_109
+  --pca 20
+  --vcf gea_109_qc.recode.vcf
+#trees 
+python3 vcf2phlip.py -i vcf
+iqtree2 -s phy -m MFP+ASC --prefix gea -B 1000 -T AUTO
+#calculate He,Ho,pi,HardyHe
+bash piFstHeho.sh
+#calculate missing rates for ind and loci
+vcftools --vcf --missing-ind /--missing-site
+#calculated share sites 
+python3 get_shared_pos.py id_sp.txt vcf
+#draw pictures
+#tree:"E:\Pinus SNP paper\tree\tree_cir.R"
+#pca:"E:\Pinus SNP paper\validation_process\PCA\gea_pca.R"
+#he,ho and pi:"E:\Pinus SNP paper\validation_process\gea_sample\gea_stat.R"
+#callrate: "E:\Pinus SNP paper\validation_process\gea_sample\gea_callrate.R"
+#snpeff draw: "E:\Pinus SNP paper\validation_process\snpeff\snp_eff_draw.R"
+
+
