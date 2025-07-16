@@ -7,19 +7,6 @@ qtlseq -r /mnt/ext4/home/wenjia/data/zy300/genome/ZY300.fa.fasta \
        -n1 20 \
        -n2 20 \
        -o /mnt/wenjia/jy_bsa/F2/result/jybsa2
-       
-
-
-qtlseq -r /mnt/ext4/home/wenjia/data/zy300/genome/ZY300.fa.fasta \
-       -p   /mnt/wenjia/jy_bsa/parent/result/mapped/H382qinben_sort_index_rg_nodup.bam \
-       -b1 /mnt/wenjia/jy_bsa/F2/result/resis/resistant_sorted.bam \
-       -b2 /mnt/wenjia/jy_bsa/F2/result/n_resis/n_resistant_sorted.bam \
-       -n1 20 \
-       -n2 20 \
-       -o /mnt/wenjia/jy_bsa/F2/result/jybsa3
-
-
-
 
 qtlplot -v /mnt/wenjia/jy_bsa/F2/result/jybsa2/30_vcf/qtlseq.vcf.gz \
         -o /mnt/wenjia/jy_bsa/F2/result/jybsa2_plot \
