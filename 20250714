@@ -1,4 +1,5 @@
 #qtlseq 将表型值耐冷最高百分之20和最低百分之20的个体分别合并为不耐和耐
+# https://github.com/YuSugihara/QTL-seq
 qtlseq -r /mnt/ext4/home/wenjia/data/zy300/genome/ZY300.fa.fasta \
        -p /mnt/wenjia/jy_bsa/parent/result/mapped/H382qinben_sort_index_rg_nodup.bam \
        -p   /mnt/wenjia/jy_bsa/parent/result/mapped/QX208qinben_sort_index_rg_nodup.bam \
