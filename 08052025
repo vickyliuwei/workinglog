@@ -1,0 +1,1 @@
+qtlplot -v qtlseq.vcf.gz -D 300 -w 100 -s 10 -o hdpmw_plot -n1 43 -n2 32
