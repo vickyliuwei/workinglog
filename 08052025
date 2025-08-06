@@ -1,1 +1,27 @@
+## qtlseq step by step https://github.com/YuSugihara/QTL-seq/blob/master/docs/01_QTL-seq_Commands_Breakdown.md#step-2-quality-control-and-trimming
+## merge bam to make bulk.bam
+## 获取这些个体的id
+/mnt/ugreen70/ws/qtlseq_data/resis.id.txt, /mnt/ugreen70/ws/qtlseq_data/nonresis.id.txt
+## 合并个体的bam文件，耐冷个体（Phe value 低的合并到一个bam：/mnt/ugreen70/ws/qtlseq_data/resis.bam）不耐冷个体（Phe value 高的合并到一个bam：/mnt/ugreen70/ws/qtlseq_data/nresis.bam）
+## 修改bam的header 这样在call snp的时候只会将合并后的bam视作一个个体的数据
+java -jar picard.jar AddOrReplaceReadGroups \
+      I=pooled_offspring.bam \
+      O=pooled_offspring.rg_fixed.bam \
+      RGID=PooledOffspringRG \ # 设置一个统一的ID
+      RGLB=OffspringLib \
+      RGPL=ILLUMINA \
+      RGPU=PooledUnit \ # 可选
+      RGSM=OffspringPool \ # 关键！将所有reads的SM设为同一个
+      CREATE_INDEX=true # 可选，创建索引
+# 建立索引
+samtools index output_directory/20_bam/parent.bam
+samtools index output_directory/20_bam/bulk1.bam
+samtools index output_directory/20_bam/bulk2.bam
+# calling vcf
+bcftools mpileup -a AD,ADF,ADR -B -q 40 -Q 18 -C 50 -O u -f output_directory/10_ref/qtlseq_ref.fasta \
+output_directory/20_bam/parent.bam output_directory/20_bam/bulk1.bam output_directory/20_bam/bulk2.bam | \
+bcftools call -vm -f GQ,GP -O u | \
+bcftools filter -i "INFO/MQ>=40" -O z -o output_directory/30_vcf/qtlseq.vcf.gz
+#运行qtlplot
 qtlplot -v qtlseq.vcf.gz -D 300 -w 100 -s 10 -o hdpmw_plot -n1 43 -n2 32
+## 绘制结果图
