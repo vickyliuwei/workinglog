@@ -19,3 +19,6 @@
   昝老师烟草F2低深度测序qtlseq
   ## 20250805
   昝老师烟草F2低深度测序qtlseq step by step 流程
+  ## 20250818
+  使用ggplot2绘制bsa 结果图
+  
