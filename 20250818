@@ -1,0 +1,71 @@
+Draw bsa plot through ggplot2
+library(ggplot2)
+library(dplyr)
+library(patchwork) # 用于分面绘图
+
+# 设置滑窗参数
+window_size <- 2e6  # 滑窗大小(根据您的基因组大小调整)
+step_size <- 1e6    # 步长(建议为滑窗大小的1/2)
+
+# 计算滑窗平均值
+snp_smoothed <- snp_data %>%
+  group_by(CHROM) %>%
+  mutate(window = floor(POSI / window_size) * window_size) %>%
+  group_by(CHROM, window) %>%
+  summarise(
+    start = min(POSI),
+    end = max(POSI),
+    mid_pos = mean(POSI),
+    mean_p99 = mean(p99, na.rm = TRUE),
+    mean_p95 = mean(p95, na.rm = TRUE),
+    mean_delta = mean(DELTA_SNPindex, na.rm = TRUE),
+    n_snps = n(),
+    .groups = "drop"
+  ) %>%
+  filter(n_snps >= 3) # 至少包含3个SNP的窗口
+
+chromosomes <- unique(snp_data$CHROM)
+plot_list <- list()
+for (chr in chromosomes) {
+  chr_data <- snp_data %>% filter(CHROM == chr)
+  chr_smoothed <- snp_smoothed %>% filter(CHROM == chr)
+  p <- ggplot() +
+    geom_point(data = chr_data, 
+               aes(x = POSI, y = DELTA_SNPindex), 
+               color = "grey60", alpha = 0.5, size = 1) +
+    geom_line(data = chr_smoothed, 
+              aes(x = mid_pos, y = mean_delta), 
+              color = "pink", linewidth = 0.8) +
+    
+    # 平滑后的p99阈值线
+    geom_line(data = chr_smoothed, 
+              aes(x = mid_pos, y = mean_p99), 
+              color = "orange",linewidth = 0.8) +
+    
+    # 平滑后的p95阈值线
+    geom_line(data = chr_smoothed, 
+              aes(x = mid_pos, y = mean_p95), 
+              color = "green",linewidth = 0.8) +
+    geom_line(data = chr_smoothed, 
+              aes(x = mid_pos, y = -mean_p95), 
+              color = "green",linewidth = 0.8) +
+    geom_line(data = chr_smoothed, 
+              aes(x = mid_pos, y = -mean_p99), 
+              color = "orange",linewidth = 0.8) +
+    geom_hline(yintercept = 0, color = "black", linewidth = 0.3) +
+    # 主题设置
+    theme_bw() +
+    theme(
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank()
+    ) +
+    # 坐标轴标签
+    labs(x = "Genomic Position (bp)", y = "ΔSNP index", 
+         title = chr)
+  plot_list[[as.character(chr)]] <- p
+}
+for (chr in chromosomes) {
+  ggsave(filename = paste0("QTLseq_smoothed_", chr, ".png"), 
+         plot = plot_list[[as.character(chr)]], 
+         width = 10, height = 6, dpi = 300)
+}
