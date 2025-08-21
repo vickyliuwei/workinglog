@@ -6,6 +6,13 @@ SRR5020975
 SRR5020976
 2. panicle_R_preanthesis; Setaria viridis; RNA-Seq
 SRR5020997
+3. GSM4190527: WT rep1,2,3; Sorghum bicolor; RNA-Seq,leaf
+SRR10528508
+SRR10528509
+SRR10528510
+4.GSM3067273: SBI616: Panicle Bio#1,2; Sorghum bicolor; OTHER
+SRR6892974
+SRR6892972
 ## (1)download
 URL=$(srapath SRR1234567)
 #axel 多线程下载
