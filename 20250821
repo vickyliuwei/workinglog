@@ -1,0 +1,34 @@
+download RNA-seq data from NCBI and mapped to reference
+1. Gene expression in green millet (Setaria viridis) leaf_V3_base
+SRR id:
+SRR5020974
+SRR5020975
+SRR5020976
+2. panicle_R_preanthesis; Setaria viridis; RNA-Seq
+SRR5020997
+## (1)download
+URL=$(srapath SRR1234567)
+#axel 多线程下载
+axel -n 10 -a "$URL" -T 90 #-T 允许延迟时间
+## 转换格式
+fastq-dump --split-files --gzip SRR5020997.sra
+## 质控
+fastp -i SRR1234567_1.fastq.gz -I SRR1234567_2.fastq.gz \
+      -o clean_1.fq.gz -O clean_2.fq.gz \
+      --detect_adapter_for_pe --qualified_quality_phred 20
+## 使用Hisat2 比对
+#需要先建立索引
+hisat2-build -p 16 /path/to/genome.fa /path/to/genome_index_base_name
+hisat2 \
+    -x /path/to/genome_index_base_name \     # 索引路径和基础名
+    -1 sample_1.fastq.gz \                   # 双端测序的第一个文件
+    -2 sample_2.fastq.gz \                   # 双端测序的第二个文件
+    -S sample.sam \                          # 输出SAM文件
+    -p 16                                    # 线程数
+
+# 通常会将SAM转换为BAM并排序
+samtools view -@ 16 -b sample.sam | samtools sort -@ 16 -o sample.sorted.bam
+samtools index sample.sorted.bam             # 为BAM文件建立索引
+## 截取SOK2区段
+samtools view -b -h -o output_region.bam input.sorted.bam chr:start-end
+## 在IGV里进行可视化
