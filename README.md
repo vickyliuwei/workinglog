@@ -21,4 +21,6 @@
   昝老师烟草F2低深度测序qtlseq step by step 流程
   ## 20250818
   使用ggplot2绘制bsa 结果图
+  ## 20250821
+  从NCBI上下载柳枝稷近缘物种的RNA-seq data，探究SOK2 在这些物种中的表达情况
   
