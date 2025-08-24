@@ -13,6 +13,20 @@ SRR10528510
 4.GSM3067273: SBI616: Panicle Bio#1,2; Sorghum bicolor; OTHER
 SRR6892974
 SRR6892972
+5. panicle
+Organism	Oryza sativa
+Characteristics	tissue: panicle
+treatment: natural
+SRR28046739
+SRR28046740
+SRR28046741
+6. 30-day rice plants
+Organism	Oryza sativa
+Characteristics	tissue: leaves and shoots
+treatment: none
+SRR31641744
+SRR31641751
+SRR31641752
 ## (1)download
 URL=$(srapath SRR1234567)
 #axel 多线程下载
