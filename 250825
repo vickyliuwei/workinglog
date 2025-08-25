@@ -1,0 +1,244 @@
+##learn pipeline to do SCRNA analysis through R package Seurat
+好的，很乐意为您提供 R 包 **Seurat** 的详细使用教程。Seurat 是目前单细胞 RNA 测序（scRNA-seq）数据分析最流行、最全面的工具包之一。
+
+本教程将涵盖从原始数据到基础分析的完整流程，适合初学者入门。
+
+---
+
+### **Seurat 单细胞分析教程 (v5.0+)**
+
+#### **1. 安装与加载**
+
+首先，确保你已安装 Seurat 及其一些常用的依赖包。
+
+```r
+# 安装 CRAN 上的稳定版
+install.packages('Seurat')
+# 安装开发版（功能更新更快，但可能不稳定）
+# remotes::install_github("satijalab/seurat", "seurat5", quiet = TRUE)
+
+# 安装其他常用配套包
+install.packages('patchwork') # 用于拼接图片
+install.packages('ggplot2')
+install.packages('dplyr')
+
+# 加载包
+library(Seurat)
+library(patchwork)
+library(ggplot2)
+library(dplyr)
+```
+
+#### **2. 数据导入与创建 Seurat 对象**
+
+Seurat 可以读取多种格式的数据，最常见的是 **10X Genomics 的 Cell Ranger** 输出目录。
+
+假设你的数据文件结构如下：
+```
+/path/to/data/
+├── barcodes.tsv.gz
+├── features.tsv.gz
+└── matrix.mtx.gz
+```
+
+使用 `Read10X` 函数读取数据，然后创建 Seurat 对象。
+
+```r
+# 读取 10X 数据
+data_dir <- "/path/to/your/data/filtered_feature_bc_matrix/"
+pbmc.data <- Read10X(data.dir = data_dir)
+
+# 从计数矩阵创建 Seurat 对象
+# project 参数为你这个数据集起个名字
+pbmc <- CreateSeuratObject(counts = pbmc.data, 
+                           project = "pbmc10k", 
+                           min.cells = 3,      # 至少在 3 个细胞中表达的基因才保留
+                           min.features = 200) # 至少检测到 200 个基因的细胞才保留
+```
+
+**对象初探：**
+```r
+pbmc
+# 查看对象的基本信息：细胞数、基因数
+# 查看对象的 Assays（ assay ， assays 是 assay 的复数形式，一个对象可以有多个 assay，最常用的是 RNA assay）
+# 查看对象的其他信息，如图片、降维结果等
+dim(pbmc) # 查看基因和细胞数量
+head(pbmc@meta.data) # 查看细胞的元数据（metadata）
+```
+
+#### **3. 质量控制 (QC) 与过滤**
+
+低质量细胞或 dying cells 通常具有以下特征：
+- **少量检测到的基因** (low `nFeature_RNA`)
+- **少量总分子数** (low `nCount_RNA`)
+- **高比例的线粒体基因表达** (high `percent.mt`)。线粒体基因通常以 “MT-” 开头。
+
+**计算线粒体基因比例：**
+```r
+# 计算线粒体基因比例并添加到元数据中
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+```
+
+**可视化 QC 指标：**
+```r
+# 绘制小提琴图查看分布
+VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+```
+![](https://satijalab.org/seurat/articles/pbmc3k/vignette_1_qc.png)
+
+**根据分布设定阈值进行过滤：**
+```r
+pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & 
+                         nFeature_RNA < 6000 & 
+                         percent.mt < 20)
+# 过滤后再次检查数据
+pbmc
+```
+
+#### **4. 数据标准化与特征选择**
+
+**标准化：** 消除细胞间测序深度的技术差异。
+```r
+pbmc <- NormalizeData(pbmc, 
+                      normalization.method = "LogNormalize", 
+                      scale.factor = 10000)
+```
+
+**识别高变基因 (Highly Variable Features)：** 用于下游分析（如PCA）的基因子集。
+```r
+pbmc <- FindVariableFeatures(pbmc, 
+                             selection.method = "vst", 
+                             nfeatures = 2000)
+
+# 查看最高变的10个基因
+top10 <- head(VariableFeatures(pbmc), 10)
+# 绘制高变基因散点图
+VariableFeaturePlot(pbmc)
+LabelPoints(plot = VariableFeaturePlot(pbmc), points = top10, repel = TRUE)
+```
+
+#### **5. 数据缩放与线性降维 (PCA)**
+
+**缩放数据：** 对每个基因的表达量进行中心化和标准化，使均值为0，方差为1。这一步对PCA至关重要。
+```r
+# 这一步通常会很慢，因为它要处理所有基因
+all.genes <- rownames(pbmc)
+pbmc <- ScaleData(pbmc, features = all.genes)
+# 为了节省时间，通常只对高变基因进行缩放
+# pbmc <- ScaleData(pbmc, features = VariableFeatures(object = pbmc))
+```
+
+**进行PCA降维：**
+```r
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+
+# 可视化PCA结果
+DimPlot(pbmc, reduction = "pca") # 看细胞在PC空间的分群
+DimHeatmap(pbmc, dims = 1:6, cells = 500, balanced = TRUE) # 查看驱动主成分的基因
+```
+
+#### **6. 确定数据维度**
+
+选择用于后续聚类和UMAP/t-SNE降维的显著主成分数量。
+```r
+# 方法一：肘部图 (ElbowPlot) - 看方差解释率的拐点
+ElbowPlot(pbmc)
+```
+![](https://satijalab.org/seurat/articles/pbmc3k/vignette_4_elbow.png)
+上图建议在 PC8-10 附近有一个拐点。
+
+#### **7. 细胞聚类 (Clustering)**
+
+Seurat 使用基于图的聚类方法。
+```r
+# 构建 KNN 图
+pbmc <- FindNeighbors(pbmc, dims = 1:10) # 使用前10个PC
+
+# 进行聚类，resolution 参数影响分群数量，值越大群越多
+pbmc <- FindClusters(pbmc, resolution = 0.5)
+
+# 查看前几个细胞的聚类ID
+head(Idents(pbmc))
+```
+
+#### **8. 非线性降维 (UMAP/t-SNE)**
+
+将高维的PCA空间映射到2D或3D进行可视化。
+```r
+# UMAP (推荐，速度快，保形性好)
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+
+# t-SNE (也可用，但速度慢)
+# pbmc <- RunTSNE(pbmc, dims = 1:10)
+
+# 绘制聚类结果
+DimPlot(pbmc, reduction = "umap", label = TRUE)
+```
+![](https://satijalab.org/seurat/articles/pbmc3k/vignette_5_umap.png)
+
+#### **9. 寻找差异表达基因 (Marker Identification)**
+
+识别每个细胞群中特异性高表达的基因，用于定义细胞类型。
+```r
+# 找出 cluster 0 相对于所有其他 cluster 的 marker genes
+cluster0.markers <- FindMarkers(pbmc, ident.1 = 0, min.pct = 0.25)
+head(cluster0.markers, n = 5)
+
+# 找出所有cluster的marker genes
+pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE, 
+                               min.pct = 0.25, 
+                               logfc.threshold = 0.25)
+```
+
+**可视化 Marker Genes：**
+```r
+# 小提琴图
+VlnPlot(pbmc, features = c("MS4A1", "CD79A"))
+
+# 特征图
+FeaturePlot(pbmc, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP", "CD8A"))
+
+# 热图
+top10 <- pbmc.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_log2FC)
+DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+```
+
+#### **10. 细胞类型注释**
+
+这是**需要生物学知识**的一步。根据上一步找到的 Marker Genes，将计算集群与已知的细胞类型匹配。
+
+例如，在PBMC数据中：
+- **Cluster 0**: 高表达 `CD3E`, `CD3D` (T cells)
+- **Cluster 1**: 高表达 `CD79A`, `MS4A1` (B cells)
+- **Cluster 2**: 高表达 `S100A9`, `S100A8`, `LYZ` (CD14+ Monocytes)
+- 等等...
+
+**为集群赋予细胞类型名称：**
+```r
+new.cluster.ids <- c("Naive CD4 T", "Memory CD4 T", "CD8 T", "B cells", "CD14+ Mono", "NK cells", "DC", "Platelets")
+names(new.cluster.ids) <- levels(pbmc)
+pbmc <- RenameIdents(pbmc, new.cluster.ids)
+
+# 重新绘制UMAP图
+DimPlot(pbmc, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
+```
+
+---
+
+### **总结与下一步**
+
+至此，你已经完成了 scRNA-seq 最基础的分析流程。后续可能进行的深入分析包括：
+
+- **细胞周期评分与回归**
+- **整合多个样本的数据** (使用 `IntegrateData` 函数)
+- **轨迹推断 (Pseudotime / Trajectory Analysis)**
+- **细胞间相互作用分析**
+- **与公共数据库比对参考映射**
+
+**最佳学习资源：**
+1.  **官方文档**: https://satijalab.org/seurat/
+    - 尤其是 “Guided Clustering Tutorial” 和 “Integration Introduction”。
+2.  **GitHub**: https://github.com/satijalab/seurat
+3.  **Seurat 论坛**: https://github.com/satijalab/seurat/discussions
+
+希望这个教程能帮助你顺利开始你的单细胞数据分析之旅！遇到具体问题时，多查阅官方文档和论坛社区的讨论。
