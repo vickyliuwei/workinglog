@@ -46,7 +46,9 @@ hisat2 \
     -2 sample_2.fastq.gz \                   # 双端测序的第二个文件
     -S sample.sam \                          # 输出SAM文件
     -p 16                                    # 线程数
-
+## 单端比对命令
+  hisat2 -p 8 -x ref/GRCh38 -U ${fq} | \
+    samtools sort -@8 -o align/${s}.bam
 # 通常会将SAM转换为BAM并排序
 samtools view -@ 16 -b sample.sam | samtools sort -@ 16 -o sample.sorted.bam
 samtools index sample.sorted.bam             # 为BAM文件建立索引
