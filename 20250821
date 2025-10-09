@@ -27,6 +27,14 @@ treatment: none
 SRR31641744
 SRR31641751
 SRR31641752
+7.Panicum miliaceum plant leaf
+SRR29438439
+SRR29438443
+8.zea mays Immature ears
+SRR35103030
+SRR35103031
+SRR35103032
+9.
 ## (1)download
 URL=$(srapath SRR1234567)
 #axel 多线程下载
