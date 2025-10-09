@@ -34,7 +34,11 @@ SRR29438443
 SRR35103030
 SRR35103031
 SRR35103032
-9.
+9.Setaria italica leaf stem spica
+SRR442162
+SRR442163
+SRR442164
+
 ## (1)download
 URL=$(srapath SRR1234567)
 #axel 多线程下载
