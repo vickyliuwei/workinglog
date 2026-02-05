@@ -1,0 +1,32 @@
+## install GAPIT in linux R
+# save as install_gapit.R
+cat("Installing GAPIT and all dependencies...\n")
+
+# 设置 CRAN 镜像
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+
+# 安装 CRAN 包
+cran_packages <- c(
+  "devtools", "MASS", "scatterplot3d", "lme4", "multcomp", "ape",
+  "EMMREML", "compiler", "data.table", "bigmemory", "biganalytics",
+  "foreach", "doParallel", "doSNOW", "mgcv", "ggplot2", "reshape2",
+  "plyr", "gridExtra", "gtools", "stringr", "RCurl", "methods",
+  "remotes", "BiocManager"
+)
+
+install.packages(cran_packages, dependencies = TRUE)
+
+# 安装 Bioconductor 包
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install(c("multtest", "gplots", "qvalue"))
+
+# 安装 GAPIT3
+library(devtools)
+install_github("jiabowang/GAPIT3", dependencies = TRUE)
+
+cat("\nInstallation complete! Testing...\n")
+library(GAPIT)
+cat("GAPIT version:", packageVersion("GAPIT"), "\n")
+cat("✓ GAPIT installed successfully!\n")
