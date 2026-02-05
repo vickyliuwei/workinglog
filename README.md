@@ -28,7 +28,7 @@
   ## 20250828 
   绘制正确中国地图的采样点地图
   ## 20260203
-  运行GAPIT示例代码
+  运行GAPIT示例代码，了解软件使用的几个GWAS，GS模型的特征
   ## 20260204
   查文献，松树项目验证数据集分intergeneic、intrageneic snp之后分开算maf, he, PCA.
   
