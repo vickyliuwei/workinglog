@@ -34,5 +34,5 @@
   ## 20260205
   配置服务器个人账户环境，安装GAPIT，看文献
   ## 20260206
-  看kerGWAS mannual 
+  看kerGWAS mannual, using python to calculate hap geno.
   
