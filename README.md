@@ -31,4 +31,8 @@
   运行GAPIT示例代码，了解软件使用的几个GWAS，GS模型的特征
   ## 20260204
   查文献，松树项目验证数据集分intergeneic、intrageneic snp之后分开算maf, he, PCA.
+  ## 20260205
+  配置服务器个人账户环境，安装GAPIT，看文献
+  ## 20260206
+  看kerGWAS mannual 
   
