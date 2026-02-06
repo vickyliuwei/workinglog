@@ -7,7 +7,7 @@
 #SBATCH --mem=8G
 #SBATCH --time=01:00:00
 
-module load gcc/11.2.0
+module load gcc/11.2.0 ## 加载编译
 
 Rscript install_my_packages.R
 ## install_my_packages.R
